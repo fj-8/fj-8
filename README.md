@@ -90,16 +90,23 @@ consequently green on all three JDK 17 legs and red on both JDK 21 legs that
 reported.
 
 What a yellow badge means here is a separate matter, and worth stating. The
-`main` runs share one concurrency group with cancellation turned off on purpose:
-a commit that is being tested is allowed to finish and the next one waits for it,
-so every commit on `main` gets its own verdict instead of the newest run
-silencing the older ones. That is also why a run can sit in the queue. When the
-reason is a runner rather than the code, it is a macOS one: `karg`, `bitlane` and
-`turnstile` have each had a macOS leg report `cancelled` with no runner ever
-assigned to it — no steps, no start time, nothing to read. A starved pool and a
-compile failure look identical in a badge, so each README records which one it
-was; `karg`'s leg cleared on a re-run of the same commit, the other two have been
-asking more than once.
+`main` runs share one concurrency group with cancellation turned off: a run that
+has started is allowed to finish instead of being cut off by the next push. What
+that setting does not promise is a verdict for every commit — a run still waiting
+in the queue when a newer commit arrives is replaced by it, which is how
+`turnstile`'s run for `7627612` ended `cancelled` with no job having started at
+all. The newest commit on `main` always gets tested, an intermediate one can end
+with nothing to report, and that is the trade the group makes rather than an
+accident of the matrix.
+
+When a run is slow, the reason is usually a runner and not the code, and when it
+is a runner it is a macOS one: `karg`, `bitlane` and `turnstile` have each had a
+macOS leg report `cancelled` with no runner ever assigned to it — no steps, no
+start time, nothing to read. A starved pool and a compile failure look identical
+in a badge, so the three repositories that have a macOS leg record which one they
+saw; `karg`'s leg cleared when the same commit was re-run, and the other two have
+been waiting on a runner more than once. `sift` has no macOS leg, so its queue is
+only ever its own six jobs.
 
 The only third-party versions any of these repositories pin are the actions in
 their workflows, and Dependabot now watches exactly that — `karg`'s two dependency
