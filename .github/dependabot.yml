@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # This repository holds a profile page and one checker script. The only
+  # pinned third-party versions in it are the actions the checker's workflow
+  # uses, so that is all there is for Dependabot to watch.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    labels:
+      - dependencies

@@ -36,7 +36,14 @@ any of them, and a measured number wherever a README makes a claim.
   length of the three files whose sizes are used as arguments, the five
   transcripts it claims are committed — which caught a line count that a Javadoc
   fix had invalidated two commits earlier, on a machine where nothing else had
-  opened the README.
+  opened the README. This page is held to the same rule by `tools/check_claims.py`,
+  which clones the other four repositories and re-measures the table above: a
+  registered `Harness.test(`, a `TEST(` use, a `def test_`, a header on disk, a
+  parsed `rust-version`, a line of a committed transcript, an `import` in a source
+  tree — 26 claims, all of which have to agree. It was proved to mean something by
+  breaking it six separate ways: 18 cases to 19, 48 tests to 49, five headers to
+  six, 123 lines to 124, dropping `zlib` from the list of modules `sift` imports,
+  and 7.9× to 9.9× each produced exactly one failing row and a non-zero exit.
 - **The loss is printed next to the win.** `sift` is 7.9×–65.7× slower per
   operation than the C container it replaces, and says so in a section called
   *The honest part: speed*, because the reason to use it is 4,201 bytes instead
@@ -67,6 +74,21 @@ across Linux, Windows and macOS, with `javac -Xlint:all -Werror` (and
 `-Xdoclint:all/protected` on the public API) as the compile step, then an import
 allowlist, a `javadoc` render, `build.sh` from a clean tree and a check that
 `build.sh` is still committed executable — ten jobs.
+
+This repository has one job of its own, and it is the checker described above:
+`.github/workflows/claims.yml` clones the four at their current `main`, runs
+`python3 tools/check_claims.py` with nothing installed, and fails on any row that
+disagrees. It runs on a push and every Monday, because a claim about four other
+repositories can go stale without anything happening here. Its scope is stated in
+its output rather than assumed: it does not re-run a benchmark, it does not
+re-derive karg's 48 — cargo adds the doc tests to that number, so the profile
+matches it against karg's own badge and leaves the measuring to karg's CI — and it
+takes turnstile's job count from the run list instead of expanding the matrix in
+`ci.yml`, because a second implementation of Actions' matrix semantics is one more
+thing to keep in sync with the first and the run list is the thing the claim is
+about. Where there is no token or no finished run to read, that row prints `skip`,
+the summary counts the skips, and an unmeasured claim is never reported as an
+agreed one.
 
 `bitlane` was red for its first two runs, and that is the part worth keeping.
 Its own harness wrote `const auto& lhs = (a)`, so an operand like `*b.min()`

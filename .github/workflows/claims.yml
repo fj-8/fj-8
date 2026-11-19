@@ -1,0 +1,44 @@
+name: Claims
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # The claims on this page are about four other repositories. They can go
+    # stale without anything happening here, so this runs weekly as well as on
+    # a push: the Monday hour is offset from :00 to stay off the busiest cron.
+    - cron: '17 6 * * 1'
+
+concurrency:
+  group: claims-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  profile-claims:
+    name: the table against the four repositories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: fj-8
+
+      # Plain anonymous clones, not actions/checkout four more times: the page
+      # only ever needs the files at their current main, and the default token
+      # cannot read another repository's contents even when all four are public.
+      - name: Clone what the page describes
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/repos"
+          for repo in karg bitlane sift turnstile; do
+            git clone --quiet --depth 1 "https://github.com/fj-8/$repo" "$RUNNER_TEMP/repos/$repo"
+            printf '%s at %s\n' "$repo" "$(git -C "$RUNNER_TEMP/repos/$repo" rev-parse --short HEAD)"
+          done
+
+      - name: Check every number in the table
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 fj-8/tools/check_claims.py fj-8/README.md "$RUNNER_TEMP/repos"
