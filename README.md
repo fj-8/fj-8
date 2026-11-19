@@ -85,11 +85,13 @@ between them, all of them to `std::popcount`, `std::countr_zero` and
 No value was ever wrong — the fix is where those conversions are written, not
 what they produce. `turnstile`'s matrix has the same asymmetry on the JDK axis:
 JDK 21's doclint rejects a comment that opens straight into `@param` or `@return`
-with no leading sentence, JDK 17's accepts the identical file, and one commit was
-consequently green on all three JDK 17 legs and red on both JDK 21 legs that
-reported.
+with no leading sentence, JDK 17's accepts the identical file, and `a09c74e` was
+consequently green on the two JDK 17 legs that got a runner and red on the two
+JDK 21 legs that did — `warning: no main description` at `Turnstile.java:81` and
+`:117`, with `-Werror` turning a comment with no first line into a build failure.
+Its two macOS legs were cancelled before either JDK could disagree.
 
-What a yellow badge means here is a separate matter, and worth stating. The
+What a badge that is not green means here is a separate matter, and worth stating.
 `main` runs share one concurrency group with cancellation turned off: a run that
 has started is allowed to finish instead of being cut off by the next push. What
 that setting does not promise is a verdict for every commit — a run still waiting
@@ -99,14 +101,23 @@ all. The newest commit on `main` always gets tested, an intermediate one can end
 with nothing to report, and that is the trade the group makes rather than an
 accident of the matrix.
 
-When a run is slow, the reason is usually a runner and not the code, and when it
-is a runner it is a macOS one: `karg`, `bitlane` and `turnstile` have each had a
+When a run is red, the reason is often a runner and not the code, and when it is
+a runner it is a macOS one: `karg`, `bitlane` and `turnstile` have each had a
 macOS leg report `cancelled` with no runner ever assigned to it — no steps, no
-start time, nothing to read. A starved pool and a compile failure look identical
-in a badge, so the three repositories that have a macOS leg record which one they
-saw; `karg`'s leg cleared when the same commit was re-run, and the other two have
-been waiting on a runner more than once. `sift` has no macOS leg, so its queue is
-only ever its own six jobs.
+start time, nothing to read. A run containing one cancelled leg is reported as a
+`failure`, which is indistinguishable in a badge from a compile error, so the
+three repositories that have a macOS leg record which one they saw. `karg` has
+had three consecutive `main` commits red for that reason alone — `0886512`,
+`6c89e50` and `6a1c077`, each with its other six jobs green — two of them were
+re-run on the same commit and cancelled again, the last after twenty-five more
+minutes in a queue, and the two commits before that cluster had the identical leg
+scheduled on the first attempt. `bitlane`'s Apple Clang check has been cancelled
+on five of its last nine `main` commits — three attempts in a row on `b270e95` —
+with every job that did get a runner going green. `turnstile` had both of its
+macOS legs cancelled on three consecutive commits — `a6836b2`, `fa7a568` and
+`ae06561` — and the middle one of those also carried a real test failure, which
+is the point: the starved legs and the compile-time ones arrive in the same
+shape. `sift` has no macOS leg, so its queue is only ever its own six jobs.
 
 The only third-party versions any of these repositories pin are the actions in
 their workflows, and Dependabot now watches exactly that — `karg`'s two dependency
