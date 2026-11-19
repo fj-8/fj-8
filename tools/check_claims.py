@@ -10,15 +10,17 @@ than against a remembered one.
 
 Every check prefers the file that holds the fact to the prose that quotes it: a
 case is a line in a test source, a header is a path, a dependency is a parsed
-TOML section, a benchmark second is a line in a committed transcript. Where a
-number can only be read from the repository that measures it, the source column
-says so — "this was matched against its own badge, not re-derived here" is a
-thing the output should say out loud instead of leaving the reader to guess.
+TOML section, a benchmark second is a line in a committed transcript. Where the
+fact only exists in the run list or in a tag rather than in the working tree —
+a job count, the manifest inside the tag an install snippet names — the row asks
+the API for it and its source column says that is where the number came from.
+Where the API was not reachable, the row is a skip, not an agreement.
 
 Exit status is 0 only when every check agrees.
 """
 
 import ast
+import base64
 import json
 import os
 import re
@@ -26,6 +28,7 @@ import sys
 import tomllib
 from pathlib import Path
 from sys import stdlib_module_names
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 WORDS = {2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven",
@@ -51,6 +54,23 @@ JAVA_ALLOWLIST = {"java.lang.invoke", "java.util", "java.util.concurrent"}
 # `__future__` is a compiler directive, not a module the process links at run
 # time, so it does not belong in a list of imports a README enumerates.
 NON_MODULES = {"__future__"}
+
+# The three READMEs that hand the reader a tag to fetch: how the snippet is
+# spelled, which file inside the tag declares the version, and how that
+# declaration is written. The claim worth re-measuring is not that the tag
+# resolves — an install would fail loudly if it did not — but that the manifest
+# inside the tag still says the version the tag is named for. Nothing in a
+# working tree can notice that, because every test in a tree runs against the
+# tree and not against the tag, and the only other place the pair is written
+# down is a release note, which is prose.
+INSTALLS = {
+    "karg": (r'github\.com/fj-8/karg", tag = "v([\d.]+)"', "Cargo.toml",
+             re.compile(r'^version = "([\d.]+)"', re.MULTILINE)),
+    "bitlane": (r"github\.com/fj-8/bitlane GIT_TAG v([\d.]+)", "CMakeLists.txt",
+                re.compile(r"project\(bitlane\s+VERSION ([\d.]+)")),
+    "sift": (r"github\.com/fj-8/sift\.git@v([\d.]+)", "pyproject.toml",
+             re.compile(r'^version = "([\d.]+)"', re.MULTILINE)),
+}
 
 
 def read(path):
@@ -130,6 +150,29 @@ def as_number(token):
     return WORDS_TO_NUMBER.get(token.lower(), token)
 
 
+def api_json(path):
+    """One GET against api.github.com.
+
+    `None` means the question was never answered — no token, no network, a rate
+    limit, a server error — which a caller reports as a skip. `False` means the
+    server answered "no such object", which is an answer and therefore evidence
+    of a disagreement rather than of a missing measurement.
+    """
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if not token:
+        return None
+    request = Request(f"https://api.github.com{path}",
+                      headers={"Authorization": f"Bearer {token}",
+                               "Accept": "application/vnd.github+json"})
+    try:
+        with urlopen(request, timeout=30) as response:
+            return json.load(response)
+    except HTTPError as error:
+        return False if error.code == 404 else None
+    except (OSError, ValueError):
+        return None
+
+
 def live_job_count(repo):
     """Jobs in the most recent completed `main` run, read from the API.
 
@@ -139,27 +182,20 @@ def live_job_count(repo):
     reported as a skip rather than as a disagreement, because a claim this
     script could not look at has not been shown to be wrong.
     """
-    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
-    if not token:
+    runs = api_json(f"/repos/fj-8/{repo}/actions/runs"
+                    "?branch=main&status=completed&event=push&per_page=10")
+    if not runs:
         return None
-    request = Request(
-        f"https://api.github.com/repos/fj-8/{repo}/actions/runs"
-        "?branch=main&status=completed&event=push&per_page=10",
-        headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
-    try:
-        with urlopen(request, timeout=30) as response:
-            runs = json.load(response)["workflow_runs"]
-        for run in runs:
-            # A queued main run that a newer push replaced finishes with no jobs
-            # at all; it is not a record of how many jobs the workflow has.
-            with urlopen(Request(run["jobs_url"] + "?per_page=100", headers=request.headers),
-                         timeout=30) as response:
-                total = json.load(response)["total_count"]
+    for run in runs["workflow_runs"]:
+        # A queued main run that a newer push replaced finishes with no jobs
+        # at all; it is not a record of how many jobs the workflow has.
+        jobs = api_json(run["jobs_url"].removeprefix("https://api.github.com")
+                        + "?per_page=100")
+        if jobs:
+            total = jobs["total_count"]
             if total:
                 return total
-        return None
-    except (OSError, KeyError, ValueError):
-        return None
+    return None
 
 
 class Report:
@@ -312,6 +348,54 @@ CHECKS = {"karg": check_karg, "bitlane": check_bitlane, "sift": check_sift,
           "turnstile": check_turnstile}
 
 
+def check_installs(root, out):
+    """Does the tag the README tells you to fetch still hold what it is called?"""
+    for name, (snippet, manifest, declared) in INSTALLS.items():
+        quoted = set(re.findall(snippet, read(root / name / "README.md")))
+        if not quoted:
+            out.fact(name, "install snippet", False,
+                     f"{name}/README.md no longer spells the tag the way {snippet} says")
+            continue
+        if len(quoted) > 1:
+            out.fact(name, "one install tag", False,
+                     f"{name}/README.md offers {sorted(quoted)}")
+            continue
+        version = quoted.pop()
+        tag = f"v{version}"
+        ref = api_json(f"/repos/fj-8/{name}/git/ref/tags/{tag}")
+        if ref is None:
+            out.skip(name, f"{manifest} at {tag}", version,
+                     "the tag's manifest, which needs an API token")
+            continue
+        if ref is False:
+            out.fact(name, f"tag {tag} exists", False, f"/repos/fj-8/{name}/git/ref/tags/{tag}")
+            continue
+        blob = api_json(f"/repos/fj-8/{name}/contents/{manifest}?ref={tag}")
+        if blob is None:
+            out.skip(name, f"{manifest} at {tag}", version, f"the file at {tag}, unreadable now")
+            continue
+        if blob is False:
+            out.fact(name, f"{manifest} at {tag}", False,
+                     f"the tag exists and has no {manifest} in it")
+            continue
+        found = declared.search(base64.b64decode(blob["content"]).decode("utf-8"))
+        out.number(name, f"{manifest} at {tag}", version, found and found.group(1),
+                   f"the file as it stands in {tag}, not in the working tree")
+
+
+def check_self(out, text):
+    """The profile states how many claims this script re-measures, so that number
+    is a claim about the script and is checked rather than maintained by hand."""
+    quoted = re.search(r"(\d+) claims", text)
+    if not quoted:
+        out.fact("profile", "states its claim count", False,
+                 "the prose no longer says how many claims are re-measured")
+        return
+    # This row is one of the claims the sentence counts, so it is in the total.
+    out.number("profile", "claims re-measured", quoted.group(1), len(out.rows) + 1,
+               "rows this run prints, this one included")
+
+
 def main(argv):
     if len(argv) != 3:
         print(__doc__)
@@ -325,6 +409,8 @@ def main(argv):
     out = Report()
     for name, check in CHECKS.items():
         check(root, cells[name], text, out)
+    check_installs(root, out)
+    check_self(out, text)
     return out.render(profile)
 
 

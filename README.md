@@ -40,10 +40,16 @@ any of them, and a measured number wherever a README makes a claim.
   which clones the other four repositories and re-measures the table above: a
   registered `Harness.test(`, a `TEST(` use, a `def test_`, a header on disk, a
   parsed `rust-version`, a line of a committed transcript, an `import` in a source
-  tree — 26 claims, all of which have to agree. It was proved to mean something by
-  breaking it six separate ways: 18 cases to 19, 48 tests to 49, five headers to
+  tree, a `Cargo.toml` as it stands inside the tag the README tells you to fetch
+  — 30 claims, all of which have to agree. It was proved to mean something by
+  breaking it eight separate ways: 18 cases to 19, 48 tests to 49, five headers to
   six, 123 lines to 124, dropping `zlib` from the list of modules `sift` imports,
-  and 7.9× to 9.9× each produced exactly one failing row and a non-zero exit.
+  7.9× to 9.9×, `v0.3.0` pointed at a tag that does not exist, and the same tag
+  pointed at a manifest that says 1.74 where the tag says 0.3.0 — each produced
+  exactly one failing row and a non-zero exit. The total is a row of its own, so
+  the number in this sentence is checked by the run instead of kept by the author:
+  adding the three install-tag rows turned it red at 26 against 30 before the prose
+  was updated, which is the same evidence the deliberate breakages give.
 - **The loss is printed next to the win.** `sift` is 7.9×–65.7× slower per
   operation than the C container it replaces, and says so in a section called
   *The honest part: speed*, because the reason to use it is 4,201 bytes instead
@@ -86,9 +92,10 @@ matches it against karg's own badge and leaves the measuring to karg's CI — an
 takes turnstile's job count from the run list instead of expanding the matrix in
 `ci.yml`, because a second implementation of Actions' matrix semantics is one more
 thing to keep in sync with the first and the run list is the thing the claim is
-about. Where there is no token or no finished run to read, that row prints `skip`,
-the summary counts the skips, and an unmeasured claim is never reported as an
-agreed one.
+about. Where there is no token or no finished run to read — the job count and the
+three install tags are the four rows that ask the API rather than a file — a row
+prints `skip`, the summary counts the skips, and an unmeasured claim is never
+reported as an agreed one.
 
 `bitlane` was red for its first two runs, and that is the part worth keeping.
 Its own harness wrote `const auto& lhs = (a)`, so an operand like `*b.min()`
