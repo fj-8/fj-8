@@ -41,17 +41,20 @@ any of them, and a measured number wherever a README makes a claim.
   registered `Harness.test(`, a `TEST(` use, a `def test_`, a header on disk, a
   parsed `rust-version`, a line of a committed transcript, an `import` in a source
   tree, a `Cargo.toml` as it stands inside the tag the README tells you to fetch,
-  an `import` in this page's own tool — 31 claims, all of which have to agree. It
-  was proved to mean something by breaking it nine separate ways: 18 cases to 19,
-  48 tests to 49, five headers to six, 123 lines to 124, dropping `zlib` from the
-  list of modules `sift` imports, 7.9× to 9.9×, `v0.3.0` pointed at a tag that
-  does not exist, the same tag pointed at a manifest saying 1.74 where the tag
-  says 0.3.0, and an `import requests` added to `tools/starved_legs.py` — each
-  produced exactly one failing row and a non-zero exit. The total is a row of its
-  own, so the number in this sentence is checked by the run instead of kept by the
-  author, and it has caught the author twice: adding the three install-tag rows
-  turned it red at 26 against 30, and the two rows about this repository's own
-  tool at 30 against 31, both before the prose had been updated to make them true.
+  an `import` in this page's own tool, a `v…` in a changelog's link section —
+  35 claims, all of which have to agree. It was proved to mean something by
+  breaking it ten separate ways: 18 cases to 19, 48 tests to 49, five headers to
+  six, 123 lines to 124, dropping `zlib` from the list of modules `sift` imports,
+  7.9× to 9.9×, `v0.3.0` pointed at a tag that does not exist, the same tag
+  pointed at a manifest saying 1.74 where the tag says 0.3.0, an
+  `import requests` added to `tools/starved_legs.py`, and a changelog link
+  rewritten to a `v0.0.9` that was never cut — each produced exactly one failing
+  row and a non-zero exit. The total is a row of its own, so the number in this
+  sentence is checked by the run instead of kept by the author, and it has caught
+  the author every time the script grew: the three install-tag rows turned it red
+  at 26 against 30, the two about this repository's own tool at 30 against 31, the
+  four changelog rows at 31 against 35, and each time it was the prose that had to
+  move rather than the repositories.
 - **The loss is printed next to the win.** `sift` is 7.9×–65.7× slower per
   operation than the C container it replaces, and says so in a section called
   *The honest part: speed*, because the reason to use it is 4,201 bytes instead
@@ -94,10 +97,10 @@ matches it against karg's own badge and leaves the measuring to karg's CI — an
 takes turnstile's job count from the run list instead of expanding the matrix in
 `ci.yml`, because a second implementation of Actions' matrix semantics is one more
 thing to keep in sync with the first and the run list is the thing the claim is
-about. Where there is no token or no finished run to read — the job count and the
-three install tags are the four rows that ask the API rather than a file — a row
-prints `skip`, the summary counts the skips, and an unmeasured claim is never
-reported as an agreed one.
+about. Where there is no token or no finished run to read — the job count, the
+three install tags and the four changelog link sections are the eight rows that
+ask the API rather than a file — a row prints `skip`, the summary counts the
+skips, and an unmeasured claim is never reported as an agreed one.
 
 `bitlane` was red for its first two runs, and that is the part worth keeping.
 Its own harness wrote `const auto& lhs = (a)`, so an operand like `*b.min()`

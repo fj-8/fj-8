@@ -387,6 +387,34 @@ def check_installs(root, out):
                    f"the file as it stands in {tag}, not in the working tree")
 
 
+def check_changelog_links(root, out):
+    """A changelog's link section is the part of a release note that fails
+    silently: the headings render whether or not the tags they point at exist, and
+    nothing in a working tree reads the URLs. Every `v…` in it is asked for as a
+    git ref, so a release cut without its tag, or a tag renamed after the note was
+    written, is a row here rather than a 404 in somebody else's browser."""
+    for name in sorted(CHECKS):
+        path = root / name / "CHANGELOG.md"
+        if not path.exists():
+            out.fact(name, "CHANGELOG.md exists", False,
+                     "the release notes this page describes are not in the tree")
+            continue
+        urls = re.findall(r"^\[[^\]]+\]:\s*(\S+)$", read(path), re.MULTILINE)
+        tags = sorted({found for url in urls for found in re.findall(r"v\d+(?:\.\d+)*", url)})
+        if not tags:
+            out.fact(name, "CHANGELOG links a tag", False,
+                     "no version in the link section, so no release is claimed")
+            continue
+        states = {tag: api_json(f"/repos/fj-8/{name}/git/ref/tags/{tag}") for tag in tags}
+        if any(state is None for state in states.values()):
+            out.skip(name, "CHANGELOG tags", len(tags), "the refs need an API token")
+            continue
+        gone = sorted(tag for tag, state in states.items() if state is False)
+        out.number(name, "CHANGELOG tags", len(tags), len(tags) - len(gone),
+                   "each v… in the link section, as a git ref"
+                   + ("" if not gone else f", missing {gone}"))
+
+
 def check_self(out, profile):
     """Two claims this page makes about itself: how many claims it makes, and
     that the other tool its prose names is stdlib-only like everything here."""
@@ -423,6 +451,7 @@ def main(argv):
     for name, check in CHECKS.items():
         check(root, cells[name], text, out)
     check_installs(root, out)
+    check_changelog_links(root, out)
     check_self(out, profile)
     return out.render(profile)
 
