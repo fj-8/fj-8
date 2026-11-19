@@ -37,15 +37,34 @@ any of them, and a measured number wherever a README makes a claim.
 - **`main` is the release.** No `develop`, no history rewriting, no force-pushes
   after a tag is public.
 
+## Continuous integration
+
+Every repository tests itself on `main`, and each README lists its own jobs.
+`karg`: `cargo test` on Linux (stable and the 1.74 MSRV), Windows and macOS,
+then `fmt --check`, `clippy -D warnings`, a lock-file grep that fails if a
+second crate appears, and `cargo doc` under `RUSTDOCFLAGS=-D warnings` — seven
+jobs. `bitlane`: each of the five headers compiled as the only include in a
+translation unit, the suite under GCC, Clang, Apple Clang and MSVC, an MSVC
+build with `/W4 /WX`, and a separate `find_package` consumer built against the
+installed tree — seven jobs. `sift`: 231 `unittest` cases on CPython 3.11, 3.12
+and 3.13 on Linux and Windows, then `pip install .` and a smoke run of both
+entry points — six jobs.
+
+`bitlane` was red for its first two runs, and that is the part worth keeping.
+Its own harness wrote `const auto& lhs = (a)`, so an operand like `*b.min()`
+bound a reference to a byte inside the `std::optional` temporary that the call
+returned — an object destroyed at the end of that initialiser, because lifetime
+extension does not cross a function call. MSVC in Debug and Release kept the
+stale bytes and every check passed; GCC said "using a dangling pointer to an
+unnamed temporary" and then compared four garbage values. Nothing in the library
+was wrong, which is exactly why the CI matrix is worth the queue time.
+
 ## Not shown here
 
-There is no CI running on GitHub yet. The three workflow files are written and
-sit in these checkouts, but pushing `.github/workflows` needs a token scope the
-current credential does not have, and no Actions run has ever executed them — so
-they are unverified, not "correct", and the suites are run locally instead. Each
-README quotes the exact command. The profile deliberately has no star counts,
-language bars or contribution graphs: they describe the account's first days, not
-the code.
+The profile deliberately has no star counts, language bars or contribution
+graphs: they describe the account's first days, not the code. Every number in
+the three READMEs is either a test or a measurement, quoted with the command
+that produced it.
 
 ## Reach me
 
