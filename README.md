@@ -9,7 +9,7 @@ any of them, and a measured number wherever a README makes a claim.
 | [**karg**](https://github.com/fj-8/karg) | *Rust* — parse argv into typed values, with help and errors that name the nearest real flag | 48 tests, MSRV 1.74, `unsafe_code = forbid`, zero dependencies including dev |
 | [**bitlane**](https://github.com/fj-8/bitlane) | *C++20* — a compressed bitmap index over `uint32_t` sets: intersection, union, rank, a versioned wire format | 32 `ctest` cases, five headers, an FNV-1a-64-checked frame format, built and measured with MSVC 19.51 |
 | [**sift**](https://github.com/fj-8/sift) | *Python 3.11+* — cardinality, frequencies, quantiles and moments over a stream you cannot hold in RAM, plus a CLI | 231 `unittest` cases, stdlib only, a 150 s benchmark suite whose output is committed |
-| [**turnstile**](https://github.com/fj-8/turnstile) | *Java 17+* — a bounded MPMC queue over a fixed ring: turn-based slots, `offer` returns `false` instead of growing or blocking | 17 cases on a stdlib-only harness, ten CI jobs on plain `javac`, five committed transcripts — three bench launches and two of the padding A/B |
+| [**turnstile**](https://github.com/fj-8/turnstile) | *Java 17+* — a bounded MPMC queue over a fixed ring: turn-based slots, `offer` returns `false` instead of growing or blocking | 18 cases on a stdlib-only harness, ten CI jobs on plain `javac`, five committed transcripts — three bench launches and two of the padding A/B |
 
 ## How the work is done
 
@@ -31,7 +31,12 @@ any of them, and a measured number wherever a README makes a claim.
   — the transcript itself — and has a test that executes its own README so the
   docs cannot rot silently. `turnstile` commits three separate JVM launches of
   its bench and two launches of its padding experiment, and the README quotes the
-  range across them rather than the best one.
+  range across them rather than the best one. `turnstile` also has a case that
+  reads its own documentation back — the number of cases the README quotes, the
+  length of the three files whose sizes are used as arguments, the five
+  transcripts it claims are committed — which caught a line count that a Javadoc
+  fix had invalidated two commits earlier, on a machine where nothing else had
+  opened the README.
 - **The loss is printed next to the win.** `sift` is 7.9×–65.7× slower per
   operation than the C container it replaces, and says so in a section called
   *The honest part: speed*, because the reason to use it is 4,201 bytes instead
@@ -57,7 +62,7 @@ translation unit, the suite under GCC, Clang, Apple Clang (all three with
 MSVC build with `/W4 /WX`, and a separate `find_package` consumer built against
 the installed tree — eight checks. `sift`: 231 `unittest` cases on CPython 3.11,
 3.12 and 3.13 on Linux and Windows, then `pip install .` and a smoke run of both
-entry points — six jobs. `turnstile`: the 17-case suite twice on JDK 17 and 21
+entry points — six jobs. `turnstile`: the 18-case suite twice on JDK 17 and 21
 across Linux, Windows and macOS, with `javac -Xlint:all -Werror` (and
 `-Xdoclint:all/protected` on the public API) as the compile step, then an import
 allowlist, a `javadoc` render, `build.sh` from a clean tree and a check that
