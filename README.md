@@ -52,10 +52,11 @@ Every repository tests itself on `main`, and each README lists its own jobs.
 then `fmt --check`, `clippy -D warnings`, a lock-file grep that fails if a
 second crate appears, and `cargo doc` under `RUSTDOCFLAGS=-D warnings` — seven
 jobs. `bitlane`: each of the five headers compiled as the only include in a
-translation unit, the suite under GCC, Clang, Apple Clang and MSVC, an MSVC
-build with `/W4 /WX`, and a separate `find_package` consumer built against the
-installed tree — seven jobs. `sift`: 231 `unittest` cases on CPython 3.11, 3.12
-and 3.13 on Linux and Windows, then `pip install .` and a smoke run of both
+translation unit, the suite under GCC, Clang, Apple Clang (all three with
+`-Wall -Wextra -Werror`) and MSVC, the same suite again under ASan and UBSan, an
+MSVC build with `/W4 /WX`, and a separate `find_package` consumer built against
+the installed tree — eight checks. `sift`: 231 `unittest` cases on CPython 3.11,
+3.12 and 3.13 on Linux and Windows, then `pip install .` and a smoke run of both
 entry points — six jobs. `turnstile`: the 17-case suite twice on JDK 17 and 21
 across Linux, Windows and macOS, with `javac -Xlint:all -Werror` (and
 `-Xdoclint:all/protected` on the public API) as the compile step, then an import
@@ -70,6 +71,18 @@ extension does not cross a function call. MSVC in Debug and Release kept the
 stale bytes and every check passed; GCC said "using a dangling pointer to an
 unnamed temporary" and then compared four garbage values. Nothing in the library
 was wrong, which is exactly why the CI matrix is worth the queue time.
+
+The strict legs have earned their keep on the other axes too. `bitlane` called
+itself warning-free because MSVC said so, and `/W4` has no integer-conversion
+diagnostics to give; GCC, Clang and Apple Clang objected twenty-some times
+between them, all of them to `std::popcount`, `std::countr_zero` and
+`std::countl_zero` answering in `int` beside unsigned counters and bit positions.
+No value was ever wrong — the fix is where those conversions are written, not
+what they produce. `turnstile`'s matrix has the same asymmetry on the JDK axis:
+JDK 21's doclint rejects a comment that opens straight into `@param` or `@return`
+with no leading sentence, JDK 17's accepts the identical file, and one commit was
+consequently green on all three JDK 17 legs and red on both JDK 21 legs that
+reported.
 
 ## Not shown here
 
