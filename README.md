@@ -4,6 +4,15 @@ Fixed-memory data structures and command-line tools, written in whatever the
 problem actually needs. Four code repositories, no third-party dependency in
 any of them, and a measured number wherever a README makes a claim.
 
+<p>
+  <a href="https://github.com/fj-8/fj-8/actions/workflows/claims.yml"><img src="https://github.com/fj-8/fj-8/actions/workflows/claims.yml/badge.svg" alt="The claims on this page are checked by this run"></a>
+  <img src="https://img.shields.io/badge/dependencies-0-informational" alt="Zero dependencies, including the run above">
+</p>
+
+The first badge is this page's own test: the run it links clones the four
+repositories below and re-measures every number written here. The second is not a
+style choice — `claims.yml` installs nothing, and a row in the run says so.
+
 | | What it answers | Proof in the repo |
 | --- | --- | --- |
 | [**karg**](https://github.com/fj-8/karg) | *Rust* — parse argv into typed values, with help and errors that name the nearest real flag | 48 tests, MSRV 1.74, `unsafe_code = forbid`, zero dependencies including dev |
@@ -41,20 +50,22 @@ any of them, and a measured number wherever a README makes a claim.
   registered `Harness.test(`, a `TEST(` use, a `def test_`, a header on disk, a
   parsed `rust-version`, a line of a committed transcript, an `import` in a source
   tree, a `Cargo.toml` as it stands inside the tag the README tells you to fetch,
-  an `import` in this page's own tool, a `v…` in a changelog's link section —
-  35 claims, all of which have to agree. It was proved to mean something by
-  breaking it ten separate ways: 18 cases to 19, 48 tests to 49, five headers to
-  six, 123 lines to 124, dropping `zlib` from the list of modules `sift` imports,
-  7.9× to 9.9×, `v0.3.0` pointed at a tag that does not exist, the same tag
-  pointed at a manifest saying 1.74 where the tag says 0.3.0, an
-  `import requests` added to `tools/starved_legs.py`, and a changelog link
-  rewritten to a `v0.0.9` that was never cut — each produced exactly one failing
-  row and a non-zero exit. The total is a row of its own, so the number in this
-  sentence is checked by the run instead of kept by the author, and it has caught
-  the author every time the script grew: the three install-tag rows turned it red
-  at 26 against 30, the two about this repository's own tool at 30 against 31, the
-  four changelog rows at 31 against 35, and each time it was the prose that had to
-  move rather than the repositories.
+  an `import` in this page's own tool, a `v…` in a changelog's link section, a
+  `pip install` added to the very job that checks the rest — 36 claims, all of
+  which have to agree. It was proved to mean something by breaking it eleven
+  separate ways: 18 cases to 19, 48 tests to 49, five headers to six, 123 lines
+  to 124, dropping `zlib` from the list of modules `sift` imports, 7.9× to 9.9×,
+  `v0.3.0` pointed at a tag that does not exist, the same tag pointed at a
+  manifest saying 1.74 where the tag says 0.3.0, an `import requests` added to
+  `tools/starved_legs.py`, a changelog link rewritten to a `v0.0.9` that was never
+  cut, and a step in `claims.yml` that installs something — each produced exactly
+  one failing row and a non-zero exit. The total is a row of its own, so the
+  number in this sentence is checked by the run instead of kept by the author, and
+  it has caught the author every time the script grew: the three install-tag rows
+  turned it red at 26 against 30, the two about this repository's own tool at 30
+  against 31, the four changelog rows at 31 against 35, and the row about what the
+  workflow installs at 35 against 36. Each time it was the prose that had to move,
+  not the repositories.
 - **The loss is printed next to the win.** `sift` is 7.9×–65.7× slower per
   operation than the C container it replaces, and says so in a section called
   *The honest part: speed*, because the reason to use it is 4,201 bytes instead

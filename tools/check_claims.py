@@ -416,8 +416,9 @@ def check_changelog_links(root, out):
 
 
 def check_self(out, profile):
-    """Two claims this page makes about itself: how many claims it makes, and
-    that the other tool its prose names is stdlib-only like everything here."""
+    """The claims this page makes about itself: how many it makes, that its other
+    tool is stdlib-only like everything else here, and that the job which checks
+    them all installs nothing — a badge on the page asserts the last of those."""
     text = read(profile)
     quoted = re.search(r"(\d+) claims", text)
     if not quoted:
@@ -425,7 +426,7 @@ def check_self(out, profile):
                  "the prose no longer says how many claims are re-measured")
     else:
         # This row is one of the claims the sentence counts, so it is in the total.
-        out.number("profile", "claims re-measured", quoted.group(1), len(out.rows) + 2,
+        out.number("profile", "claims re-measured", quoted.group(1), len(out.rows) + 3,
                    "rows this run prints, this one included")
     tool = profile.resolve().parent / "tools" / "starved_legs.py"
     if not tool.exists():
@@ -435,6 +436,13 @@ def check_self(out, profile):
     imports = python_imports(tool) - {"check_claims"}
     out.fact("profile", "starved_legs.py is stdlib", imports <= set(stdlib_module_names),
              f"its imports are {sorted(imports)} plus the sibling checker module")
+    workflow = profile.resolve().parent / ".github" / "workflows" / "claims.yml"
+    steps = [line for line in read(workflow).splitlines() if not line.lstrip().startswith("#")]
+    installs = [line.strip() for line in steps
+                if re.search(r"\b(?:pip|npm|yarn|apt-get|cargo|go) install\b|setup-python", line)]
+    out.fact("profile", "the job installs nothing", not installs,
+             "the workflow's install steps, of which it has "
+             + str(len(installs)) + (f": {installs}" if installs else ""))
 
 
 def main(argv):
