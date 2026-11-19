@@ -40,16 +40,18 @@ any of them, and a measured number wherever a README makes a claim.
   which clones the other four repositories and re-measures the table above: a
   registered `Harness.test(`, a `TEST(` use, a `def test_`, a header on disk, a
   parsed `rust-version`, a line of a committed transcript, an `import` in a source
-  tree, a `Cargo.toml` as it stands inside the tag the README tells you to fetch
-  — 30 claims, all of which have to agree. It was proved to mean something by
-  breaking it eight separate ways: 18 cases to 19, 48 tests to 49, five headers to
-  six, 123 lines to 124, dropping `zlib` from the list of modules `sift` imports,
-  7.9× to 9.9×, `v0.3.0` pointed at a tag that does not exist, and the same tag
-  pointed at a manifest that says 1.74 where the tag says 0.3.0 — each produced
-  exactly one failing row and a non-zero exit. The total is a row of its own, so
-  the number in this sentence is checked by the run instead of kept by the author:
-  adding the three install-tag rows turned it red at 26 against 30 before the prose
-  was updated, which is the same evidence the deliberate breakages give.
+  tree, a `Cargo.toml` as it stands inside the tag the README tells you to fetch,
+  an `import` in this page's own tool — 31 claims, all of which have to agree. It
+  was proved to mean something by breaking it nine separate ways: 18 cases to 19,
+  48 tests to 49, five headers to six, 123 lines to 124, dropping `zlib` from the
+  list of modules `sift` imports, 7.9× to 9.9×, `v0.3.0` pointed at a tag that
+  does not exist, the same tag pointed at a manifest saying 1.74 where the tag
+  says 0.3.0, and an `import requests` added to `tools/starved_legs.py` — each
+  produced exactly one failing row and a non-zero exit. The total is a row of its
+  own, so the number in this sentence is checked by the run instead of kept by the
+  author, and it has caught the author twice: adding the three install-tag rows
+  turned it red at 26 against 30, and the two rows about this repository's own
+  tool at 30 against 31, both before the prose had been updated to make them true.
 - **The loss is printed next to the win.** `sift` is 7.9×–65.7× slower per
   operation than the C container it replaces, and says so in a section called
   *The honest part: speed*, because the reason to use it is 4,201 bytes instead
@@ -135,18 +137,27 @@ a runner it is a macOS one: `karg`, `bitlane` and `turnstile` have each had a
 macOS leg report `cancelled` with no runner ever assigned to it — no steps, no
 start time, nothing to read. A run containing one cancelled leg is reported as a
 `failure`, which is indistinguishable in a badge from a compile error, so the
-three repositories that have a macOS leg record which one they saw. `karg` has
-had three consecutive `main` commits red for that reason alone — `0886512`,
-`6c89e50` and `6a1c077`, each with its other six jobs green — two of them were
-re-run on the same commit and cancelled again, the last after twenty-five more
-minutes in a queue, and the two commits before that cluster had the identical leg
-scheduled on the first attempt. `bitlane`'s Apple Clang check has been cancelled
-on five of its last nine `main` commits — three attempts in a row on `b270e95` —
-with every job that did get a runner going green. `turnstile` had both of its
-macOS legs cancelled on three consecutive commits — `a6836b2`, `fa7a568` and
-`ae06561` — and the middle one of those also carried a real test failure, which
-is the point: the starved legs and the compile-time ones arrive in the same
-shape. `sift` has no macOS leg, so its queue is only ever its own six jobs.
+three repositories that have a macOS leg record which one they saw, each of them
+as a closed range rather than as a count of "the most recent". Between `0886512`
+and `d33975f`, five `karg` runs reported `failure` with six jobs green and
+`Test macos-latest / stable` never given a runner; two of the five were re-run on
+their own commit and starved again — `6a1c077` after twenty-five minutes with its
+`started_at` still empty — and the two commits before the range had the identical
+leg scheduled on the first attempt. `bitlane`'s Apple Clang check is starved in
+six of the nine runs between `b38ec65` and `4d81a45`, three attempts in a row on
+`b270e95` among them, with every job that did get a runner green in all six; one
+run in that range is green on all eight, and two of them are the
+replaced-while-queued shape described above. `turnstile` had both macOS legs
+starved on the seven runs that started jobs from `a09c74e` to `f830e3c`. Four of
+those seven failed for that alone, and the other three carried a real failure
+beside the starvation — doclint, a file mode, a ring-size assertion — which is
+the point: the starved legs and the compile-time ones arrive in the same shape.
+`sift` has no macOS leg, so its queue is only ever its own six jobs. These
+ranges were written from `python3 tools/starved_legs.py`, which prints each
+repository's recent `main` runs beside the legs that got no runner. It prints
+history and not a verdict, because a verdict about somebody else's pool is the
+one number on this page that moves while nobody is pushing anything — and a
+sentence about it should be about a range that has finished.
 
 The only third-party versions any of these repositories pin are the actions in
 their workflows, and Dependabot now watches exactly that — `karg`'s two dependency

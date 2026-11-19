@@ -96,8 +96,12 @@ def table_cells(profile_text):
 
 
 def python_imports(root):
+    """The top-level modules imported by every `*.py` under `root`, or by `root`
+    itself when it is a single file — the tools in this repository are measured
+    the same way as the packages in the other four."""
+    paths = [Path(root)] if Path(root).is_file() else sorted(Path(root).rglob("*.py"))
     found = set()
-    for path in Path(root).rglob("*.py"):
+    for path in paths:
         for node in ast.walk(ast.parse(read(path), filename=str(path))):
             if isinstance(node, ast.Import):
                 found.update(a.name.split(".")[0] for a in node.names)
@@ -383,17 +387,26 @@ def check_installs(root, out):
                    f"the file as it stands in {tag}, not in the working tree")
 
 
-def check_self(out, text):
-    """The profile states how many claims this script re-measures, so that number
-    is a claim about the script and is checked rather than maintained by hand."""
+def check_self(out, profile):
+    """Two claims this page makes about itself: how many claims it makes, and
+    that the other tool its prose names is stdlib-only like everything here."""
+    text = read(profile)
     quoted = re.search(r"(\d+) claims", text)
     if not quoted:
         out.fact("profile", "states its claim count", False,
                  "the prose no longer says how many claims are re-measured")
+    else:
+        # This row is one of the claims the sentence counts, so it is in the total.
+        out.number("profile", "claims re-measured", quoted.group(1), len(out.rows) + 2,
+                   "rows this run prints, this one included")
+    tool = profile.resolve().parent / "tools" / "starved_legs.py"
+    if not tool.exists():
+        out.fact("profile", "starved_legs.py exists", False,
+                 "the prose names a tool that is not in the tree")
         return
-    # This row is one of the claims the sentence counts, so it is in the total.
-    out.number("profile", "claims re-measured", quoted.group(1), len(out.rows) + 1,
-               "rows this run prints, this one included")
+    imports = python_imports(tool) - {"check_claims"}
+    out.fact("profile", "starved_legs.py is stdlib", imports <= set(stdlib_module_names),
+             f"its imports are {sorted(imports)} plus the sibling checker module")
 
 
 def main(argv):
@@ -410,7 +423,7 @@ def main(argv):
     for name, check in CHECKS.items():
         check(root, cells[name], text, out)
     check_installs(root, out)
-    check_self(out, text)
+    check_self(out, profile)
     return out.render(profile)
 
 
