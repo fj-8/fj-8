@@ -84,6 +84,26 @@ with no leading sentence, JDK 17's accepts the identical file, and one commit wa
 consequently green on all three JDK 17 legs and red on both JDK 21 legs that
 reported.
 
+What a yellow badge means here is a separate matter, and worth stating. The
+`main` runs share one concurrency group with cancellation turned off on purpose:
+a commit that is being tested is allowed to finish and the next one waits for it,
+so every commit on `main` gets its own verdict instead of the newest run
+silencing the older ones. That is also why a run can sit in the queue. When the
+reason is a runner rather than the code, it is a macOS one: `karg`, `bitlane` and
+`turnstile` have each had a macOS leg report `cancelled` with no runner ever
+assigned to it — no steps, no start time, nothing to read. A starved pool and a
+compile failure look identical in a badge, so each README records which one it
+was; `karg`'s leg cleared on a re-run of the same commit, the other two have been
+asking more than once.
+
+The only third-party versions any of these repositories pin are the actions in
+their workflows, and Dependabot now watches exactly that — `karg`'s two dependency
+tables are empty, `sift`'s `dependencies` is an empty list, `turnstile`'s CI fails
+the build on any import outside the JDK, and `bitlane` is five headers. Its first
+pull requests were version bumps for `actions/checkout`, `actions/setup-java` and
+`actions/setup-python`; they are merged on the same terms as any other change,
+which means their own CI legs have to be green first.
+
 ## Not shown here
 
 The profile deliberately has no star counts, language bars or contribution
@@ -97,6 +117,10 @@ Issues on whichever repository the thing belongs to —
 [karg](https://github.com/fj-8/karg/issues),
 [bitlane](https://github.com/fj-8/bitlane/issues),
 [sift](https://github.com/fj-8/sift/issues),
-[turnstile](https://github.com/fj-8/turnstile/issues). Each has a `SECURITY.md`
+[turnstile](https://github.com/fj-8/turnstile/issues). Each has an issue form that
+asks for the commands from a clean tree, the output in the words it printed, and
+the toolchain version — because a report without those three cannot be turned into
+a test. Each has the same pull-request checklist as a template, spelling out what
+`CONTRIBUTING.md` already requires. Each has a `SECURITY.md`
 that says what counts as a vulnerability (spoiler: a sketch overestimating is
 not one, a frame that makes a process allocate 16 GB is).
